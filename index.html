@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>资源中心</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            background: #0f2027;
+            background: linear-gradient(180deg, #2c5364, #203a43, #0f2027);
+            color: #fff;
+            text-align: center;
+        }
+
+        /* banner 保持原样但加薄遮罩提高可读性 */
+        .banner {
+            padding: 60px 20px 40px;
+            background: url("https://picsum.photos/800/600?tech") no-repeat center/cover;
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+        }
+        .banner::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.15));
+            pointer-events: none;
+        }
+        .banner h1 {
+            position: relative;
+            z-index: 1;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0;
+            text-shadow: 0 3px 8px rgba(0,0,0,0.6);
+        }
+        .banner p {
+            position: relative;
+            z-index: 1;
+            margin-top: 10px;
+            font-size: 14px;
+            opacity: 0.95;
+            min-height: 20px;
+        }
+
+        .fade { opacity: 0; transition: opacity 1s ease; position: absolute; width: 100%; left: 0; }
+        .fade.active { opacity: 1; position: relative; }
+
+        .features { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 30px 20px; }
+        .feature {
+            background: rgba(255,255,255,0.06);
+            border-radius: 12px;
+            padding: 20px 10px;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.28);
+        }
+
+        /* 原基础样式 */
+        .highlight {
+            background: linear-gradient(90deg, #ff416c, #ff4b2b); /* 红色渐变背景 */
+            margin: 30px 20px;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #fff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+            position: relative; /* 为后面的动态背景做定位 */
+            overflow: hidden;
+            transition: all 0.4s ease; /* 添加平滑动画 */
+            cursor: pointer; /* ✅ 整块可点击 */
+        }
+        /* 去掉文字下划线 */
+        .highlight a {
+            color: #fff;
+            text-decoration: none;
+        }
+
+        /* ✅ 动态悬停效果部分 */
+        .highlight::before {
+            /* 背景光晕层 */
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                    120deg,
+                    rgba(255, 255, 255, 0.25),
+                    rgba(255, 255, 255, 0),
+                    rgba(255, 255, 255, 0.25)
+            );
+            opacity: 0;
+            transform: translateX(-100%);
+            transition: transform 1s ease, opacity 0.6s ease;
+        }
+
+        /* 鼠标悬停时的动态动画效果 */
+        .highlight:hover {
+            transform: translateY(-4px); /* 微微上浮 */
+            box-shadow: 0 10px 25px rgba(0,0,0,0.55); /* 阴影增强 */
+        }
+
+        /* 背景光滑滑动动画 */
+        .highlight:hover::before {
+            opacity: 1;
+            transform: translateX(100%);
+        }
+
+        .cta {
+            display: inline-block; margin: 20px auto; padding: 15px 40px;
+            font-size: 16px; font-weight: bold; color: #fff;
+            background: linear-gradient(90deg, #4CAF50, #2ecc71);
+            border-radius: 30px; text-decoration: none; box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+        .cta:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0,0,0,0.45); }
+
+        /* ===== 下载区（美化，兼容原有类名） ===== */
+        .download-container {
+            max-width: 600px;
+            margin: 34px auto;
+            background: rgba(255,255,255,0.04);
+            padding: 18px;
+            border-radius: 14px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.38);
+        }
+        .download-container h2 {
+            margin-bottom: 14px;
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        /* 列表垂直排列（手机首选） */
+        .buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 0 6px;
+        }
+
+        .download-item {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* 改造 download-btn：左右布局（左：图标+文字，右：文件大小/次要信息） */
+        .download-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 14px;
+            width: 100%;
+            border-radius: 10px;
+            text-decoration: none;
+            color: #fff;
+            font-weight: 700;
+            font-size: 15px;
+            box-shadow: 0 8px 22px rgba(0,0,0,0.32);
+            transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
+            -webkit-tap-highlight-color: transparent;
+            overflow: hidden;
+        }
+
+        /* 左侧容器：图标 + 标题 */
+        .download-btn .left { display:flex; align-items:center; gap:12px; text-align:left; }
+        .btn-icon {
+            width: 46px;
+            height: 46px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.06);
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .label { display:block; line-height:1; }
+
+        /* 右侧信息 */
+        .right { display:flex; align-items:center; gap:8px; }
+        .file-size { font-size:13px; color: rgba(255,255,255,0.95); opacity:0.95; }
+
+        /* hover / active */
+        .download-btn:hover { transform: translateY(-3px); box-shadow: 0 14px 34px rgba(0,0,0,0.45); }
+        .download-btn:active { transform: translateY(0); }
+
+        /* 禁用样式（后端若加 class 'disabled'） */
+        .download-btn.disabled {
+            opacity: 0.56;
+            pointer-events: none;
+            filter: grayscale(8%);
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* 预定义平台类（后端可输出 .android/.ios/.win/.web），但保留你原本内联背景覆盖能力 */
+        .download-btn.android { background: linear-gradient(90deg,#4CAF50,#2ecc71); }
+        .download-btn.ios     { background: linear-gradient(90deg,#ff4b2b,#ff416c); }
+        .download-btn.win     { background: linear-gradient(90deg,#1e3c72,#2a5298); }
+        .download-btn.web     { background: linear-gradient(90deg,#0077cc,#005fa3); }
+        .download-btn.default { background: linear-gradient(90deg,#4CAF50,#2ecc71); }
+
+        /* 保持向后兼容：如果你仍然在 a 上使用内联 style background，会覆盖这些 class */
+        /* 移动端微调 */
+        @media (max-width: 420px) {
+            .btn-icon { width: 40px; height: 40px; font-size: 18px; }
+            .download-btn { padding: 12px; font-size: 15px; }
+            .download-container { padding: 14px; margin: 18px 10px; border-radius: 12px; }
+            .download-container h2 { font-size: 16px; }
+        }
+        /* === ✨ 新增部分：立体手指动画 === */
+        .hand-pointer {
+            display: inline-block;
+            position: absolute;
+            left: 10px;
+            top: 10px;
+            animation: handMove 1.6s ease-in-out infinite;
+        }
+        .hand {
+            position: relative;
+            display: inline-block;
+            font-size: 32px;
+            text-shadow: 0 2px 3px rgba(0,0,0,0.4);
+            transform-origin: center bottom;
+            animation: handTap 1.2s infinite;
+            filter: drop-shadow(1px 3px 2px rgba(0,0,0,0.3));
+        }
+        .hand::before {
+            content: "👍";
+            position: absolute;
+            left: 0;
+            top: 0;
+            transform: translate(-2px, -1px) scale(1.05);
+            background: linear-gradient(145deg, #ffd27f 0%, #ffb347 50%, #e29b3e 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 3px 5px rgba(0,0,0,0.25);
+            opacity: 0.95;
+            animation: thumbPress 1.2s infinite;
+        }
+        @keyframes handMove {
+            0%,100% { transform: translateX(0); }
+            50% { transform: translateX(12px); }
+        }
+        @keyframes handTap {
+            0%,100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(3px) scale(0.95); }
+        }
+        @keyframes thumbPress {
+            0%,100% { transform: translate(-2px, -1px) scale(1.05); filter: brightness(1); }
+            50% { transform: translate(-2px, 1px) scale(0.96); filter: brightness(1.25); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Banner -->
+<div class="banner">
+    <h1>🌍 海外团队 · 技术领先 · 稳定可靠</h1>
+    <p id="sloganBox">
+        <span class="fade active">🌍 全球视野，雄厚实力，为您打造高质量服务平台</span>
+        <span class="fade">🛠️ 一站式解决方案 · 技术与服务双保障</span>
+        <span class="fade">🚀 全新产品 · 专属定制 · 独立平台</span>
+        <span class="fade">💡 AI驱动 · 智能出票 · 模板自定义</span>
+        <span class="fade">🤝 用户至上 · 有求必应 · 全程支持</span>
+        <span class="fade">☎️ 7×24小时客服 · 服务从未间断</span>
+    </p>
+</div>
+
+<!-- 产品优势 -->
+<div class="features">
+    <div class="feature">🤖 AI驱动<br>智能出票</div>
+    <div class="feature">💡 模板随心<br>千店千面</div>
+    <div class="feature">👩‍💻 专属客服<br>全天候支持</div>
+    <div class="feature">📊 多数据分析<br>精准洞察</div>
+</div>
+
+<!-- 福利 -->
+<div class="highlight" id="highlightBox">
+    <div class="hand-pointer"><span class="hand">👉</span></div>
+    🎁 <a id="registerBtn" href="javascript:void(0);">注册即送会员，30天内免費使用</a><br>
+    后续，最低消费仅 1 元 · 按需计费
+</div>
+
+<!-- 合作邀请 -->
+<div>
+    <h2>🤝 合作伙伴招募 · 仅限3位 · 轻松月入过万</h2>
+    <p>无风险 · 无负担 · 越干越轻松，越久越赚钱。
+    </p>
+    <a href="http://139.196.192.78:9000/#/pages/anonymous/anonymous" class="cta" target="_blank">立即加入</a>
+</div>
+
+<!-- 下载区 -->
+<div class="download-container">
+    <h2>📥 安装包下载</h2>
+    <div class="buttons">
+        <div class="download-item"><a href="https://wfff.pages.dev/2025/11/com.fastaiticket.fjapp.prod_v1.0.0(1)V251117201445.apk" target="_blank" rel="noopener noreferrer" class="download-btn" style="background:linear-gradient(90deg,#4CAF50,#2ecc71);"><span class='icon'>📱</span> 安卓下载 <span class='file-size'>(10.53 MB)</span></a></div>
+<div class="download-item"><a href="http://139.196.192.78:9000" target="_blank" rel="noopener noreferrer" class="download-btn" style="background:linear-gradient(90deg,#4CAF50,#2ecc71);"><span class='icon'>🍎</span> 苹果打开 <span class='file-size'>(5.88MB)</span></a></div>
+    </div>
+    <div class="update-time">更新日期: 2025-11-17 20:15:17</div>
+</div>
+
+<script>
+    // slogan 轮播
+    const slogans = document.querySelectorAll('#sloganBox .fade');
+    let index = 0;
+    function showNext() {
+        slogans[index].classList.remove('active');
+        index = (index + 1) % slogans.length;
+        slogans[index].classList.add('active');
+    }
+    setInterval(showNext, 3000);
+    // 注册按钮处理
+    (function () {
+        // 模板动态生成的链接（后台传入）
+        var baseUrl = "http://139.196.192.78:9000";  // 例如 http://192.168.0.102:1026
+        // 获取当前 URL 的 param 参数
+        var urlParams = new URLSearchParams(window.location.search);
+        var paramValue = urlParams.get("param");
+        // 先拼上 /#/register
+        var finalUrl = baseUrl.replace(/\/+$/, "") + "/#/register";
+        // 如果有 param，拼接到 query string
+        if (paramValue) {
+            finalUrl += "?param=" + encodeURIComponent(paramValue);
+        }
+       // 绑定点击事件到整个区域
+        var highlightBox = document.getElementById("highlightBox");
+        if (highlightBox) {
+            highlightBox.addEventListener("click", function () {
+                window.open(finalUrl, "_blank");
+            });
+        }
+    })();
+</script>
+
+</body>
+</html>
